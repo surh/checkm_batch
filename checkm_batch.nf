@@ -56,13 +56,13 @@ process gunzip{
   input:
   tuple file(genomes) from GZGENOMES.collate(params.batch_size)
 
-  output
+  output:
   file "*.fna" into FNAGENOMES
 
   """
   gzip -d $genomes
   """
-  
+
 }
 
 // process create_batch_map{
