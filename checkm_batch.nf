@@ -69,7 +69,7 @@ process gunzip{
 
 }
 
-FNAGENOMES.subscribe{println it}
+// FNAGENOMES.subscribe{println it}
 
 process run_checkm{
   label 'checkm'
