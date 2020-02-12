@@ -69,63 +69,33 @@ process gunzip{
 
 FNAGENOMES.subscribe{println it}
 
-// process create_batch_map{
-//   label 'py3'
-//   // module 'fraserconda'
-//   cpus 1
-//   memory '1GB'
-//   time '1:00:00'
-//   errorStrategy 'retry'
-//   maxRetries 2
-//   queue params.queue
-//
-//
-//   input:
-//   file indir
-//
-//   output:
-//   file('batch_map.txt') into create_batch
-//   file('checkm_batches/batch_*') into checkm_dirs
-//
-//   """
-//   ${workflow.projectDir}/create_batches.py --indir ${params.indir} \
-//     --outdir checkm_batches \
-//     --outfile batch_map.txt \
-//     --batch_size ${params.batch_size}
-//   """
-// }
-//
-// process run_checkm{
-//   label 'checkm'
-//   // module 'prodigal:hmmer:pplacer:fraserconda'
-//   // conda params.conda_checkm
-//   cpus params.threads
-//   memory params.memory
-//   time params.time
-//   errorStrategy 'retry'
-//   maxRetries 2
-//   maxForks params.max_forks
-//
-//   queue params.queue
-//
-//   input:
-//   file checkm_dir from checkm_dirs.flatten()
-//
-//   output:
-//   file "checkm_results.txt" into checkm_results
-//   // file "checkm_results_noheader.txt" into checkm_results_noheader
-//
-//   """
-//   checkm lineage_wf \
-//     -t ${params.threads} \
-//     -f checkm_results.txt \
-//     --tab_table \
-//     ${checkm_dir} \
-//     results
-//
-//   # tail -n +2 checkm_results.txt > checkm_results_noheader.txt
-//   """
-// }
+process run_checkm{
+  label 'checkm'
+  cpus params.threads
+  memory params.memory
+  time params.time
+  maxForks params.max_forks
+
+  queue params.queue
+
+  input:
+  file checkm_dir from checkm_dirs.flatten()
+
+  output:
+  file "checkm_results.txt" into checkm_results
+  // file "checkm_results_noheader.txt" into checkm_results_noheader
+
+  """
+  checkm lineage_wf \
+    -t ${params.threads} \
+    -f checkm_results.txt \
+    --tab_table \
+    ${checkm_dir} \
+    results
+
+  # tail -n +2 checkm_results.txt > checkm_results_noheader.txt
+  """
+}
 //
 // process collect_results{
 //   label 'py3'
@@ -233,11 +203,12 @@ FNAGENOMES.subscribe{println it}
 /*
 process {
   executor = 'slurm'
+  errorStrategy = 'finish'
   withLabel: py3 {
     module = 'fraserconda'
   }
   withLabel: checkm {
-    module = 'prodigal:hmmer:pplacer:fraserconda'
+    module = 'prodigal:hmmer:pplacer:anaconda'
     conda = '/opt/modules/pkgs/anaconda/3.6/envs/python2'
   }
   withLabel: r {
