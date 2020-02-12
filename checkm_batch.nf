@@ -53,6 +53,8 @@ GZGENOMES = Channel.fromPath("$indir/**.fna.gz")
 // GENOMES.subscribe{println it}
 
 process gunzip{
+  stageInMode 'copy'
+
   input:
   file genomes from GZGENOMES.collate(params.batch_size)
 
