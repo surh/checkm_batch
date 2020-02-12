@@ -204,14 +204,15 @@ process {
   maxFors = 300
   stageInMode = 'rellink'
   withLabel: py3 {
-    module = 'fraserconda'
+    module = 'anaconda'
+    conda = ''/opt/modules/pkgs/anaconda/3.6/envs/fraserconda'
   }
   withLabel: checkm {
     module = 'prodigal:hmmer:pplacer:anaconda'
     conda = '/opt/modules/pkgs/anaconda/3.6/envs/python2'
   }
   withLabel: r {
-    module = 'R/3.5.1server'
+    module = 'R/3.6.1'
   }
 }
 executor{
