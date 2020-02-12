@@ -67,6 +67,8 @@ process gunzip{
 
 }
 
+FNAGENOMES.subscribe{println it}
+
 // process create_batch_map{
 //   label 'py3'
 //   // module 'fraserconda'
