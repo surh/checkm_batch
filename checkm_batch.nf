@@ -49,6 +49,8 @@ params.max_forks = 200
 
 // Process params
 indir = file(params.indir)
+GENOMES = Channel.fromPath("$indir/**.fna.gz")
+GENOMES.subscribe{println it}
 
 // process create_batch_map{
 //   label 'py3'
