@@ -56,13 +56,15 @@ process gunzip{
   stageInMode 'copy'
 
   input:
-  file genomes from GZGENOMES.collate(params.batch_size)
+  file gzgenomes from GZGENOMES.collate(params.batch_size)
 
   output:
-  file "*.fna" into FNAGENOMES
+  file "genomes/" into FNAGENOMES
 
   """
-  gzip -d $genomes
+  mkdir genomes/
+  mv $gzgenomes genomes/
+  gzip -d genomes/*
   """
 
 }
@@ -79,45 +81,40 @@ process run_checkm{
   queue params.queue
 
   input:
-  file checkm_dir from checkm_dirs.flatten()
+  file genomes_dir from FNAGENOMES
 
   output:
-  file "checkm_results.txt" into checkm_results
-  // file "checkm_results_noheader.txt" into checkm_results_noheader
+  file "checkm_results.txt" into CHECKMTABS
 
   """
   checkm lineage_wf \
     -t ${params.threads} \
     -f checkm_results.txt \
     --tab_table \
-    ${checkm_dir} \
+    $genomes_dir \
     results
-
-  # tail -n +2 checkm_results.txt > checkm_results_noheader.txt
   """
 }
-//
-// process collect_results{
-//   label 'py3'
-//   // module 'fraserconda'
-//   cpus 1
-//   memory '1GB'
-//   time '00:30:00'
-//   queue params.queue
-//   publishDir params.outdir
-//
-//   input:
-//   file "*.txt" from checkm_results.collect()
-//
-//   output:
-//   file "checkm_results.txt" into CHECKM
-//
-//   """
-//   ${workflow.projectDir}/../sutilspy/bin/cat_tables.py \
-//     *.txt \
-//     --outfile checkm_results.txt
-//   """
-// }
+
+
+process collect_results{
+  label 'py3'
+  memory '1GB'
+  time '00:30:00'
+  publishDir params.outdir
+
+  input:
+  file checkm_tabs from CHECKMTABS.collect()
+
+  output:
+  file "full_checkm_results.txt" into CHECKM
+
+  """
+  ${workflow.projectDir}/cat_tables.py \
+    $checkm_tabs \
+    --outfile full_checkm_results.txt
+  """
+}
 //
 // process filter_checkm{
 //   label 'r'
@@ -202,8 +199,10 @@ process run_checkm{
 // Example nextflow.config
 /*
 process {
-  executor = 'slurm'
   errorStrategy = 'finish'
+  queue = 'hbfraser,hns'
+  maxFors = 300
+  stageInMode = 'rellink'
   withLabel: py3 {
     module = 'fraserconda'
   }
@@ -214,5 +213,10 @@ process {
   withLabel: r {
     module = 'R/3.5.1server'
   }
+}
+executor{
+  name = 'slurm'
+  queueSize = 500
+  submitRateLitmit = '1 sec'
 }
 */
