@@ -205,7 +205,7 @@ process {
   stageInMode = 'rellink'
   withLabel: py3 {
     module = 'anaconda'
-    conda = ''/opt/modules/pkgs/anaconda/3.6/envs/fraserconda'
+    conda = '/opt/modules/pkgs/anaconda/3.6/envs/fraserconda'
   }
   withLabel: checkm {
     module = 'prodigal:hmmer:pplacer:anaconda'
