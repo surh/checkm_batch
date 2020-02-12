@@ -49,8 +49,21 @@ params.max_forks = 200
 
 // Process params
 indir = file(params.indir)
-GENOMES = Channel.fromPath("$indir/**.fna.gz")
-GENOMES.subscribe{println it}
+GZGENOMES = Channel.fromPath("$indir/**.fna.gz")
+// GENOMES.subscribe{println it}
+
+process gunzip{
+  input:
+  tuple file(genomes) from GZGENOMES.collate(params.batch_size)
+
+  output
+  file "*.fna" into FNAGENOMES
+
+  """
+  gzip -d $genomes
+  """
+  
+}
 
 // process create_batch_map{
 //   label 'py3'
