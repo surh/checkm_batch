@@ -54,7 +54,7 @@ GZGENOMES = Channel.fromPath("$indir/**.fna.gz")
 
 process gunzip{
   input:
-  tuple file(genomes) from GZGENOMES.collate(params.batch_size)
+  file genomes from GZGENOMES.collate(params.batch_size)
 
   output:
   file "*.fna" into FNAGENOMES
