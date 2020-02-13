@@ -49,86 +49,72 @@ params.max_forks = 200
 
 // Process params
 indir = file(params.indir)
+GZGENOMES = Channel.fromPath("$indir/**.fna.gz")
+// GENOMES.subscribe{println it}
 
-// process create_batch_map{
-//   label 'py3'
-//   // module 'fraserconda'
-//   cpus 1
-//   memory '1GB'
-//   time '1:00:00'
-//   errorStrategy 'retry'
-//   maxRetries 2
-//   queue params.queue
-//
-//
-//   input:
-//   file indir
-//
-//   output:
-//   file('batch_map.txt') into create_batch
-//   file('checkm_batches/batch_*') into checkm_dirs
-//
-//   """
-//   ${workflow.projectDir}/create_batches.py --indir ${params.indir} \
-//     --outdir checkm_batches \
-//     --outfile batch_map.txt \
-//     --batch_size ${params.batch_size}
-//   """
-// }
-//
-// process run_checkm{
-//   label 'checkm'
-//   // module 'prodigal:hmmer:pplacer:fraserconda'
-//   // conda params.conda_checkm
-//   cpus params.threads
-//   memory params.memory
-//   time params.time
-//   errorStrategy 'retry'
-//   maxRetries 2
-//   maxForks params.max_forks
-//
-//   queue params.queue
-//
-//   input:
-//   file checkm_dir from checkm_dirs.flatten()
-//
-//   output:
-//   file "checkm_results.txt" into checkm_results
-//   // file "checkm_results_noheader.txt" into checkm_results_noheader
-//
-//   """
-//   checkm lineage_wf \
-//     -t ${params.threads} \
-//     -f checkm_results.txt \
-//     --tab_table \
-//     ${checkm_dir} \
-//     results
-//
-//   # tail -n +2 checkm_results.txt > checkm_results_noheader.txt
-//   """
-// }
-//
-// process collect_results{
-//   label 'py3'
-//   // module 'fraserconda'
-//   cpus 1
-//   memory '1GB'
-//   time '00:30:00'
-//   queue params.queue
-//   publishDir params.outdir
-//
-//   input:
-//   file "*.txt" from checkm_results.collect()
-//
-//   output:
-//   file "checkm_results.txt" into CHECKM
-//
-//   """
-//   ${workflow.projectDir}/../sutilspy/bin/cat_tables.py \
-//     *.txt \
-//     --outfile checkm_results.txt
-//   """
-// }
+process gunzip{
+  stageInMode 'copy'
+
+  input:
+  file gzgenomes from GZGENOMES.collate(params.batch_size)
+
+  output:
+  file "genomes/" into FNAGENOMES
+
+  """
+  mkdir genomes/
+  mv $gzgenomes genomes/
+  gzip -d genomes/*
+  """
+
+}
+
+// FNAGENOMES.subscribe{println it}
+
+process run_checkm{
+  label 'checkm'
+  cpus params.threads
+  memory params.memory
+  time params.time
+  maxForks params.max_forks
+
+  queue params.queue
+
+  input:
+  file genomes_dir from FNAGENOMES
+
+  output:
+  file "checkm_results.txt" into CHECKMTABS
+
+  """
+  checkm lineage_wf \
+    -t ${params.threads} \
+    -f checkm_results.txt \
+    --tab_table \
+    $genomes_dir \
+    results
+  """
+}
+
+
+process collect_results{
+  label 'py3'
+  memory '1GB'
+  time '00:30:00'
+  publishDir params.outdir
+
+  input:
+  file checkm_tabs from CHECKMTABS.collect()
+
+  output:
+  file "full_checkm_results.txt" into CHECKM
+
+  """
+  ${workflow.projectDir}/cat_tables.py \
+    $checkm_tabs \
+    --outfile full_checkm_results.txt
+  """
+}
 //
 // process filter_checkm{
 //   label 'r'
@@ -213,16 +199,25 @@ indir = file(params.indir)
 // Example nextflow.config
 /*
 process {
-  executor = 'slurm'
+  errorStrategy = 'finish'
+  queue = 'hbfraser,hns'
+  maxFors = 300
+  stageInMode = 'rellink'
   withLabel: py3 {
-    module = 'fraserconda'
+    module = 'anaconda'
+    conda = '/opt/modules/pkgs/anaconda/3.6/envs/fraserconda'
   }
   withLabel: checkm {
-    module = 'prodigal:hmmer:pplacer:fraserconda'
+    module = 'prodigal:hmmer:pplacer:anaconda'
     conda = '/opt/modules/pkgs/anaconda/3.6/envs/python2'
   }
   withLabel: r {
-    module = 'R/3.5.1server'
+    module = 'R/3.6.1'
   }
+}
+executor{
+  name = 'slurm'
+  queueSize = 500
+  submitRateLitmit = '1 sec'
 }
 */
