@@ -25,7 +25,7 @@
 // Thresholds for checkM statistics
 // --batch_size
 // Number of genomes to analyze by batch
-// --threads, --memory, --time, --queue, --max_forks
+// --threads, --memory, --time
 // Parameters for checkm jobs.
 
 // Configuration and dependencies:
@@ -36,21 +36,16 @@
 // Params
 params.indir = 'genomes/'
 params.outdir = 'output/'
-params.contamination = 2
-params.completeness = 98
-
+// params.contamination = 2
+// params.completeness = 98
 params.batch_size = 200
 params.threads = 8
 params.memory = '40GB'
-params.time = '2:00:00'
-params.queue = 'owners,hbfraser,hns'
-params.max_forks = 200
-
+params.time = '12:00:00'
 
 // Process params
 indir = file(params.indir)
 GZGENOMES = Channel.fromPath("$indir/**.fna.gz")
-// GENOMES.subscribe{println it}
 
 process gunzip{
   stageInMode 'copy'
@@ -68,8 +63,6 @@ process gunzip{
   """
 
 }
-
-// FNAGENOMES.subscribe{println it}
 
 process run_checkm{
   label 'checkm'
@@ -96,7 +89,6 @@ process run_checkm{
   """
 }
 
-
 process collect_results{
   label 'py3'
   memory '1GB'
@@ -115,86 +107,6 @@ process collect_results{
     --outfile full_checkm_results.txt
   """
 }
-//
-// process filter_checkm{
-//   label 'r'
-//   cpus 1
-//   memory '2GB'
-//   time '00:30:00'
-//   queue params.queue
-//   publishDir params.outdir, pattern: "output/all_completeness_histogram.svg",
-//     saveAs: {"checkm/all_completeness_histogram.svg"}
-//   publishDir params.outdir, pattern: "output/all_contamination_histogram.svg",
-//     saveAs: {"checkm/all_contamination_histogram.svg"}
-//   publishDir params.outdir, pattern: "output/all_heterogeneity_histogram.svg",
-//     saveAs: {"checkm/all_heterogeneity_histogram.svg"}
-//   publishDir params.outdir,
-//     pattern: "output/all_completeness_vs_contamination.svg",
-//     saveAs: {"checkm/all_completeness_vs_contamination.svg"}
-//   publishDir params.outdir,
-//     pattern: "output/chosen_completeness_histogram.svg",
-//     saveAs: {"checkm/chosen_completeness_histogram.svg"}
-//   publishDir params.outdir,
-//     pattern: "output/chosen_contamination_histogram.svg",
-//     saveAs: {"checkm/chosen_contamination_histogram.svg"}
-//   publishDir params.outdir,
-//     pattern: "output/chosen_heterogeneity_histogram.svg",
-//     saveAs: {"checkm/chosen_heterogeneity_histogram.svg"}
-//   publishDir params.outdir,
-//     pattern: "output/chosen_completeness_vs_contamination.svg",
-//     saveAs: {"checkm/chosen_completeness_vs_contamination.svg"}
-//   publishDir params.outdir, pattern: "output/chosen_checkm_results.txt",
-//   saveAs: {"checkm/chosen_checkm_results.txt"}
-//
-//   input:
-//   file "checkm_results.txt" from CHECKM
-//
-//   output:
-//   file "output/all_completeness_histogram.svg"
-//   file "output/all_contamination_histogram.svg"
-//   file "output/all_heterogeneity_histogram.svg"
-//   file "output/all_completeness_vs_contamination.svg"
-//   file "output/chosen_completeness_histogram.svg"
-//   file "output/chosen_contamination_histogram.svg"
-//   file "output/chosen_heterogeneity_histogram.svg"
-//   file "output/chosen_completeness_vs_contamination.svg"
-//   file "output/chosen_checkm_results.txt" into CHOSEN
-//
-//   """
-//   ${workflow.projectDir}/process_checkm_results.r \
-//     checkm_results.txt \
-//     --contamination ${params.contamination} \
-//     --completeness ${params.completeness}
-//   """
-// }
-//
-// process clean_genome_dirs{
-//   label 'py3'
-//   cpus 1
-//   memory '2GB'
-//   // If copying, need to increase time
-//   time '00:45:00'
-//   queue params.queue
-//   publishDir params.outdir,
-//     pattern: "clean",
-//     saveAs: {"clean"}
-//
-//   input:
-//   file indir
-//   file 'checkm_results.txt' from CHOSEN
-//
-//   output:
-//   file 'clean'
-//
-//   """
-//   grep -v "# genomes" checkm_results.txt | cut -f 1 > keep.txt
-//
-//   ${workflow.projectDir}/clean_genome_dirs.py ${params.indir} \
-//     --outdir clean/ \
-//     --keep keep.txt
-//   """
-// }
-
 
 // Example nextflow.config
 /*
