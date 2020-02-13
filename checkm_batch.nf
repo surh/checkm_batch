@@ -104,14 +104,14 @@ process collect_results{
   publishDir params.outdir
 
   input:
-  file checkm_tabs from CHECKMTABS.collect()
+  file "*.txt" from CHECKMTABS.collect()
 
   output:
   file "full_checkm_results.txt" into CHECKM
 
   """
   ${workflow.projectDir}/cat_tables.py \
-    $checkm_tabs \
+    *.txt \
     --outfile full_checkm_results.txt
   """
 }
