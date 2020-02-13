@@ -69,9 +69,6 @@ process run_checkm{
   cpus params.threads
   memory params.memory
   time params.time
-  maxForks params.max_forks
-
-  queue params.queue
 
   input:
   file genomes_dir from FNAGENOMES
